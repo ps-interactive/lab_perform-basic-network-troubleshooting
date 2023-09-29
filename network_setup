@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# create two namespaces
+sudo ip netns add segment1
+sudo ip netns add segment2
+# create a veth-pair on segment1
+sudo ip link add eth0-1 type veth peer name veth1
+sudo ip link set eth0-1 netns segment1
+# segment2's veth-pair
+sudo ip link add eth0-2 type veth peer name veth2
+sudo ip link set eth0-2 netns segment2
+# assign interfaces and ips
+sudo ip netns exec segment1 ifconfig eth0-1 10.10.10.1/24 up
+sudo ip netns exec segment2 ifconfig eth0-2 10.10.10.2/24 up
+# create a bridge, and ports on the bridge
+sudo ovs-vsctl add-br vswitch
+sudo ovs-vsctl add-port vswitch veth1
+sudo ovs-vsctl add-port vswitch veth2
+sudo ifconfig veth1 up
+sudo ifconfig veth2 up
+# bring up the switch and assign it an ip
+sudo ifconfig vswitch 10.10.10.3/24 up
+
+echo "segment1's veth-pair, ip config."
+echo "================================"
+sudo ip netns exec segment1 ip link
+sudo ip netns exec segment1 ifconfig
+echo "segment2's veth-pair, ip config."
+echo "================================"
+sudo ip netns exec segment2 ip link
+sudo ip netns exec segment2 ifconfig
